@@ -155,6 +155,8 @@ const imageLoaded   = ref<boolean>(false)  // gate for enabling slider
 const setResolution = (resolution: ResolutionType) => {
     selectedResolution.value = resolution
     resolutionMode.value = 'preset'
+    displayWidth.value = resolution.w
+    displayHeight.value = resolution.h
 }
 
 /* ------------------ source upload handler ------------------------------ */
@@ -169,7 +171,7 @@ function onFileChange(e: Event) {
     const probe = new Image()
     probe.onload = () => {
         originalWidth.value = probe.naturalWidth
-        scaleWidth.value    = [probe.naturalWidth]
+        scaleWidth.value    = [displayWidth.value]
         imageLoaded.value   = true
     }
     probe.src = imageUrl.value
