@@ -98,8 +98,14 @@
                     </span>
                 </div>
 
-                <div class="flex px-1">
-
+                <div class="flex px-1 w-full">
+                    <MaskCanvas
+                        class="mx-auto"
+                        :image-url="imageUrl"
+                        :threshold="threshold"
+                        :contrast="contrast"
+                        :display-width="displayWidth"
+                        :display-height="displayHeight" />
                 </div>
             </div>
         </div>
@@ -109,6 +115,8 @@
 <script setup lang="ts">
 import { resolutionPresets } from '@/constants/resolutions'
 import type { ResolutionType } from '@/constants/resolutions'
+
+import MaskCanvas from '@/components/MaskCanvas.vue'
 
 const imageUrl = ref<string | null>(null)
 const threshold = ref<number[]>([50])
