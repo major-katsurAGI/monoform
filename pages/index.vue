@@ -94,36 +94,54 @@
                             </details>
 
                             <div v-if="resolutionMode === 'custom'" class="flex items-center gap-1.5 mt-1.5">
-                                <input v-model="displayWidth" type="text" class="w-auto min-w-0">
-                                x
-                                <input v-model="displayHeight" type="text" class="w-auto min-w-0">
+                                <input v-model="displayWidth" type="text" class="w-auto min-w-0">x<input v-model="displayHeight" type="text" class="w-auto min-w-0">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="flex px-2 mt-auto">
-                        <button class="w-full cursor-pointer">Generate</button>
                     </div>
                 </div>
             </div>
 
-            <div box-="square" shear-="top" class="box-muted">
-                <div class="flex justify-between">
-                    <span is-="badge" variant-="background0">
-                        <h1>Output</h1>
-                    </span>
+            <div class="flex flex-col">
+                <div box-="square" shear-="top" class="box-muted flex flex-col grow">
+                    <div class="flex justify-between">
+                        <span is-="badge" variant-="background0">
+                            <h1>Preview</h1>
+                        </span>
+                    </div>
+
+                    <div v-if="imageUrl" class="flex flex-col px-1 pt-1 grow">
+                        <MaskCanvas
+                            :image-url="imageUrl"
+                            :display-width="displayWidth"
+                            :display-height="displayHeight"
+                            :threshold="threshold[0]"
+                            :contrast="contrast[0]"
+                            :scale-width="scaleWidth[0]"
+                        />
+
+                        <div class="flex px-2 mt-auto">
+                            <button class="w-full cursor-pointer">Generate</button>
+                        </div>
+                    </div>
+
+                    <div v-else class="flex items-center p-3 pl-5">
+                        <p>Add An Image To The Left</p> 
+                    </div>
                 </div>
 
-                <div class="flex px-1 w-full">
-                    <MaskCanvas
-                        v-if="imageUrl"
-                        :image-url="imageUrl"
-                        :display-width="displayWidth"
-                        :display-height="displayHeight"
-                        :threshold="threshold[0]"
-                        :contrast="contrast[0]"
-                        :scale-width="scaleWidth[0]"
-                    />
+                <div box-="square" shear-="top" class="box-muted">
+                    <div class="flex justify-between">
+                        <span is-="badge" variant-="background0">
+                            <h1>Code</h1>
+                        </span>
+                    </div>
+
+                    <div v-if="outputCode" class="flex flex-col px-1 pt-1 grow">
+                    </div>
+
+                    <div v-else class="flex items-center p-3 pl-5">
+                        <p>Code to copy and paste will show up here</p> 
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,6 +155,7 @@ import MaskCanvas from '@/components/MaskCanvas.vue'
 
 /* ------------------ existing state ------------------------------------- */
 const imageUrl           = ref<string | null>(null)
+const outputCode         = ref<string>('')
 const threshold          = ref<number[]>([50])
 const contrast           = ref<number[]>([100])
 

@@ -1,26 +1,38 @@
 <template>
-	<div class="flex flex-col items-center gap-4 w-full">
-		<!-- ── Preview (full-res + contrast) ── -->
-		<div class="relative w-[400px] h-[400px] select-none">
-			<canvas ref="previewCanvas" :style="canvasStylePreview" />
-			<div
-				data-canvas="preview"
-				class="absolute border-2 border-cyan-400 cursor-move z-10"
-				:style="maskStylePreview"
-				@mousedown="startDrag"
-			/>
+	<div class="flex justify-center gap-4 w-full pt-10">
+        <!-- EFFECTS PREVIEW -->
+        <div box-="square" shear-="top" class="box-muted">
+            <div>
+                <span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
+            </div>
+
+            <div class="relative w-[400px] h-[400px] select-none">
+                <canvas ref="previewCanvas" :style="canvasStylePreview" />
+                <div
+                    data-canvas="preview"
+                    class="absolute border-2 border-cyan-400 cursor-move z-10"
+                    :style="maskStylePreview"
+                    @mousedown="startDrag"
+                />
+            </div>
 		</div>
 
-		<!-- ── Mono (down-scaled, monochrome) ── -->
-		<div class="relative w-[400px] h-[400px] select-none">
-			<canvas ref="monoCanvas" :style="canvasStyleMono" />
-			<div
-				data-canvas="mono"
-				class="absolute border-2 border-cyan-400 cursor-move z-10"
-				:style="maskStyleMono"
-				@mousedown="startDrag"
-			/>
-		</div>
+        <!-- DISPLAY PREVIEW -->
+        <div box-="square" shear-="top" class="box-muted">
+            <div>
+                <span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
+            </div>
+
+            <div class="relative w-[400px] h-[400px] select-none">
+                <canvas ref="monoCanvas" :style="canvasStyleMono" />
+                <div
+                    data-canvas="mono"
+                    class="absolute border-2 border-cyan-400 cursor-move z-10"
+                    :style="maskStyleMono"
+                    @mousedown="startDrag"
+                />
+            </div>
+        </div>
 	</div>
 </template>
 
