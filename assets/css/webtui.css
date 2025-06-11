@@ -10,3 +10,9 @@
 /* @import "@webtui/css/components/typography.css"; */
 /* @import "@webtui/css/components/textarea.css"; */
 /* @import "@webtui/css/components/select.css"; */
+
+@import '@webtui/theme-catppuccin';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
