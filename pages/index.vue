@@ -54,6 +54,22 @@
 
                     <div box-="square" shear-="top" class="box-muted">
                         <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Scale&nbsp;(px wide)</span>
+                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth }}</span>
+                        </div>
+
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                            <Slider
+                                v-model="scaleWidth"
+                                :min="displayWidth"
+                                :max="originalWidth"
+                                :disabled="!imageLoaded"
+                            />
+                        </div>
+                    </div>
+
+                    <div box-="square" shear-="top" class="box-muted">
+                        <div class="flex justify-between">
                             <span is-="badge" variant-="background0">Resolution</span>
                         </div>
 
@@ -100,12 +116,14 @@
 
                 <div class="flex px-1 w-full">
                     <MaskCanvas
-                        class="mx-auto"
+                        v-if="imageUrl"
                         :image-url="imageUrl"
-                        :threshold="threshold"
-                        :contrast="contrast"
                         :display-width="displayWidth"
-                        :display-height="displayHeight" />
+                        :display-height="displayHeight"
+                        :threshold="threshold[0]"
+                        :contrast="contrast[0]"
+                        :scale-width="scaleWidth[0]"
+                    />
                 </div>
             </div>
         </div>
@@ -115,28 +133,50 @@
 <script setup lang="ts">
 import { resolutionPresets } from '@/constants/resolutions'
 import type { ResolutionType } from '@/constants/resolutions'
-
 import MaskCanvas from '@/components/MaskCanvas.vue'
 
-const imageUrl = ref<string | null>(null)
-const threshold = ref<number[]>([50])
-const contrast = ref<number[]>([100])
-const resolutionMode = ref<'preset' | 'custom'>('preset')
+/* ------------------ existing state ------------------------------------- */
+const imageUrl           = ref<string | null>(null)
+const threshold          = ref<number[]>([50])
+const contrast           = ref<number[]>([100])
+
+const resolutionMode     = ref<'preset' | 'custom'>('preset')
 const selectedResolution = ref<ResolutionType>(resolutionPresets[0])
 
-const displayWidth = ref<number>(resolutionPresets[0].w)
-const displayHeight = ref<number>(resolutionPresets[0].h)
+const displayWidth       = ref<number>(resolutionPresets[0].w)
+const displayHeight      = ref<number>(resolutionPresets[0].h)
 
+/* ------------------ new scale-related refs ----------------------------- */
+const scaleWidth    = ref<number[]>([0])   // array with one entry, like other sliders
+const originalWidth = ref<number>(0)       // natural width of img (px)
+const imageLoaded   = ref<boolean>(false)  // gate for enabling slider
+
+/* ------------------ settings helpers ----------------------------------- */
 const setResolution = (resolution: ResolutionType) => {
     selectedResolution.value = resolution
     resolutionMode.value = 'preset'
 }
 
+/* ------------------ source upload handler ------------------------------ */
 function onFileChange(e: Event) {
     const files = (e.target as HTMLInputElement).files
     if (!files || !files[0]) return
 
     if (imageUrl.value) URL.revokeObjectURL(imageUrl.value)
     imageUrl.value = URL.createObjectURL(files[0])
+
+    /* preload to fetch native dims for scale slider */
+    const probe = new Image()
+    probe.onload = () => {
+        originalWidth.value = probe.naturalWidth
+        scaleWidth.value    = [probe.naturalWidth]
+        imageLoaded.value   = true
+    }
+    probe.src = imageUrl.value
 }
+
+/* ------------------ keep scale ≥ displayWidth -------------------------- */
+watch(displayWidth, (w) => {
+    if (scaleWidth.value[0] < w) scaleWidth.value = [w]
+})
 </script>
