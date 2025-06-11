@@ -1,0 +1,4 @@
+@layer base, utils, components;
+
+@import "@webtui/css/full.css";
+@import '@webtui/theme-catppuccin';

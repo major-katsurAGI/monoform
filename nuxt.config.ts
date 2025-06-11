@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
     compatibilityDate: '2025-05-15',
     devtools: { enabled: true },
-    css: ['@/assets/css/webtui.css'],
+    css: ['@/assets/css/main.css', '@/assets/css/webtui.colors.css'],
     modules: ['@nuxt/image', '@nuxtjs/tailwindcss'],
     vite: {
         worker: { format: 'es' } // needed for TS worker imports

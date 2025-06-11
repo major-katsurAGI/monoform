@@ -12,16 +12,15 @@
                     <span is-="badge" variant-="background0"><h2>Settings</h2></span>
                 </div>
 
-                <div class="flex">
+                <div class="flex px-1">
                     <div box-="square" shear-="top" class="w-full">
-                        <div>
-                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">Threshold</span>
+                        <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Threshold</span>
+                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold }}</span>
                         </div>
 
-                        <div class="flex flex-col w-full px-2">
-                            <p>{{ threshold }}</p>
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
                             <Slider v-model="threshold" />
-                            <h3>Nigga</h3>
                         </div>
                     </div>
                 </div>
@@ -34,7 +33,7 @@
                     </span>
                 </div>
 
-                <div>
+                <div class="flex px-1">
                     NIGGA
                 </div>
             </div>
