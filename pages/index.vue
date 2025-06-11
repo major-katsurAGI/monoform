@@ -117,11 +117,8 @@
                             :threshold="threshold[0]"
                             :contrast="contrast[0]"
                             :scale-width="scaleWidth[0]"
+                            @output-code="setCode"
                         />
-
-                        <div class="flex px-2 mt-auto">
-                            <button class="w-full cursor-pointer">Generate</button>
-                        </div>
                     </div>
 
                     <div v-else class="flex items-center p-3 pl-5">
@@ -137,6 +134,7 @@
                     </div>
 
                     <div v-if="outputCode" class="flex flex-col px-1 pt-1 grow">
+                        {{ outputCode }}
                     </div>
 
                     <div v-else class="flex items-center p-3 pl-5">
@@ -171,6 +169,10 @@ const originalWidth = ref<number>(0)       // natural width of img (px)
 const imageLoaded   = ref<boolean>(false)  // gate for enabling slider
 
 /* ------------------ settings helpers ----------------------------------- */
+const setCode = (code: string) => {
+    console.log(code)
+    outputCode.value = code
+}
 const setResolution = (resolution: ResolutionType) => {
     selectedResolution.value = resolution
     resolutionMode.value = 'preset'

@@ -34,12 +34,17 @@
             </div>
         </div>
 	</div>
+
+    <div class="flex px-4 mt-auto">
+        <button @click="emitCode" class="w-full cursor-pointer">Generate</button>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import { clamp, debounce }		from '@/handlers/helpers'
 import { createDragHandlers }	from '@/handlers/drag'
+import { generateCCode }        from '@/handlers/generate'
 
 /* ───────── props ───────── */
 const props = defineProps({
@@ -50,6 +55,8 @@ const props = defineProps({
 	displayHeight: { type: Number, required: true },
 	scaleWidth:    { type: Number, required: true }
 })
+
+const emit = defineEmits<{ (e:'outputCode', code:string):void }>()
 
 /* ───────── refs ───────── */
 const previewCanvas	= ref<HTMLCanvasElement | null>(null)
@@ -215,4 +222,40 @@ const maskStyleMono = computed(() => ({
 	left  : `${monoFit.offX + mask.x * scaleFactor.value * monoFit.s}px`,
 	top   : `${monoFit.offY  + mask.y * scaleFactor.value * monoFit.s}px`
 }))
+
+const emitCode = () => {
+	if (!monoCanvas.value) return
+
+	const ctx = monoCanvas.value.getContext('2d', { willReadFrequently:true })!
+	const sx  = Math.round(mask.x * scaleFactor.value)
+	const sy  = Math.round(mask.y * scaleFactor.value)
+
+	const imgData = ctx.getImageData(sx, sy, props.displayWidth, props.displayHeight)
+
+	/* build C array + emit */
+	const code = generateCCode(
+		imgData,
+		props.displayWidth,
+		props.displayHeight,
+		props.displayWidth,
+		props.displayHeight
+	)
+	emit('outputCode', code)
+
+//	/* debug helper: auto-download cropped area as PNG */
+//	const dbg = document.createElement('canvas')
+//	dbg.width  = props.displayWidth
+//	dbg.height = props.displayHeight
+//	dbg.getContext('2d')!.putImageData(imgData, 0, 0)
+//
+//	dbg.toBlob(blob => {
+//		if (!blob) return
+//		const url = URL.createObjectURL(blob)
+//		const a   = document.createElement('a')
+//		a.href      = url
+//		a.download  = 'oled_crop.png'
+//		a.click()
+//		URL.revokeObjectURL(url)
+//	}, 'image/png')
+}
 </script>
