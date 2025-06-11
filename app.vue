@@ -4,6 +4,6 @@
 
 <script setup>
 useHead({
-    htmlAttrs: { 'data-webtui-theme': 'catppuccin-macchiato' },
+    htmlAttrs: { 'data-webtui-theme': 'catppuccin-mocha' },
 })
 </script>

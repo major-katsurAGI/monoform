@@ -114,3 +114,5 @@
 .border-base      { border-color: var(--base); }
 .border-mantle    { border-color: var(--mantle); }
 .border-crust     { border-color: var(--crust); }
+
+.box-muted { --box-border-color: var(--background1); }

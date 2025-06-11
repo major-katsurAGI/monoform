@@ -11,7 +11,7 @@
             <SliderRange class="absolute bg-background2 h-full" />
         </SliderTrack>
 
-        <SliderThumb class="block size-4 bg-sky shadow-sm focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-grass9" />
+        <SliderThumb class="block size-4 bg-mauve shadow-sm focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-grass9" />
     </SliderRoot>
 </template>
 

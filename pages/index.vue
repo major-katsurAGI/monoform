@@ -1,83 +1,134 @@
 <template>
     <div class="flex flex-col mx-auto max-w-[1400px] min-h-[100svh]">
-        <div box-="square" class="flex items-center h-20">
+        <div box-="square" class="box-muted flex items-center h-20">
             <div class="px-4">
-                <h1>MONOFORM</h1>
+                <h1 class="text-mauve text-lg">MONOFORM</h1>
             </div>
         </div>
 
         <div class="grid grid-cols-[400px_1fr] flex-1">
-            <div box-="square" shear-="top">
+            <div box-="square" shear-="top" class="box-muted flex flex-col">
                 <div>
-                    <span is-="badge" variant-="background0"><h2>Settings</h2></span>
+                    <span is-="badge" variant-="background0"><p class="font-bold">Settings</p></span>
                 </div>
 
-                <div class="flex px-1">
-                    <div box-="square" shear-="top" class="w-full">
+                <div class="flex flex-col px-1 pt-1 grow">
+                    <div box-="square" shear-="top" class="box-muted">
+                        <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Source</span>
+                        </div>
+
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                            <input id="source_upload" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+
+                            <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed border-2 border-foreground2 p-3 hover:bg-overlay1/20 transition-colors">
+                                <span class="icon-[lucide--upload] mr-2" />
+                                Upload Image
+                            </label>
+
+                            <img v-else :src="imageUrl" class="w-full object-contain max-h-[30svh]" alt="Source preview" />
+                        </div>
+                    </div>
+
+                    <div box-="square" shear-="top" class="box-muted">
                         <div class="flex justify-between">
                             <span is-="badge" variant-="background0">Threshold</span>
                             <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold }}</span>
                         </div>
 
                         <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <Slider v-model="threshold" />
+                            <Slider v-model="threshold" :min="0" :max="100" />
                         </div>
+                    </div>
+
+                    <div box-="square" shear-="top" class="box-muted">
+                        <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Contrast</span>
+                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ contrast }}</span>
+                        </div>
+
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                            <Slider v-model="contrast" :min="0" :max="200" />
+                        </div>
+                    </div>
+
+                    <div box-="square" shear-="top" class="box-muted">
+                        <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Resolution</span>
+                        </div>
+
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                            <details is-="popover">
+                                <summary class="w-full bg-background1 cursor-pointer">{{ resolutionMode === 'preset' ? selectedResolution.label : 'Custom' }}</summary>
+                                <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
+                                    <li 
+                                        v-for="resolutionItem of resolutionPresets"
+                                        class="cursor-pointer" 
+                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': selectedResolution.label === resolutionItem.label && resolutionMode !== 'custom' }"
+                                        @click="setResolution(resolutionItem)">
+                                        {{ resolutionItem.label }}
+                                    </li>
+                                    <li 
+                                        class="cursor-pointer" 
+                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': resolutionMode === 'custom' }"
+                                        @click="resolutionMode = 'custom'">
+                                        Custom
+                                    </li>
+                                </ul>
+                            </details>
+
+                            <div v-if="resolutionMode === 'custom'" class="flex items-center gap-1.5 mt-1.5">
+                                <input v-model="displayWidth" type="text" class="w-auto min-w-0">
+                                x
+                                <input v-model="displayHeight" type="text" class="w-auto min-w-0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex px-2 mt-auto">
+                        <button class="w-full cursor-pointer">Generate</button>
                     </div>
                 </div>
             </div>
 
-            <div box-="square" shear-="top">
+            <div box-="square" shear-="top" class="box-muted">
                 <div class="flex justify-between">
                     <span is-="badge" variant-="background0">
-                        <h2>Output</h2>
+                        <h1>Output</h1>
                     </span>
                 </div>
 
                 <div class="flex px-1">
-                    NIGGA
+
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- <div class="p-2 max-w-4xl mx-auto mt-4"> -->
-    <!--     <h1 class="mb-2">OLED Bitmap Generator</h1> -->
-    <!---->
-    <!--     <ImageUploader @loaded="handleLoaded" /> -->
-    <!---->
-    <!--     <div class="tui-box mt-1"> -->
-    <!--         <label class="mr-1">Resolution:</label> -->
-    <!--         <select v-model="res" class="tui-select"> -->
-    <!--             <option v-for="r in resolutions" :key="r.label" :value="r"> -->
-    <!--             {{ r.label }} -->
-    <!--             </option> -->
-    <!--         </select> -->
-    <!--     </div> -->
-    <!---->
-    <!--     <ThresholdSlider v-model:threshold="threshold" /> -->
-    <!--     <CropSelector v-if="upload" :src="upload.url" :aspect="res.w / res.h" @cropped="cropped = $event" /> -->
-    <!--     <OutputPanel v-if="bytes && pngBlob" :bytes="bytes" :png="pngBlob" :width="res.w" :height="res.h" /> -->
-    <!-- </div> -->
 </template>
 
 <script setup lang="ts">
-import { resolutions } from '@/constants/resolutions'
+import { resolutionPresets } from '@/constants/resolutions'
+import type { ResolutionType } from '@/constants/resolutions'
 
+const imageUrl = ref<string | null>(null)
 const threshold = ref<number[]>([50])
+const contrast = ref<number[]>([100])
+const resolutionMode = ref<'preset' | 'custom'>('preset')
+const selectedResolution = ref<ResolutionType>(resolutionPresets[0])
 
-const upload   = ref<{ bmp: ImageBitmap; url: string } | null>(null)
-const cropped  = ref<ImageBitmap | null>(null)
-const res      = ref(resolutions[0])
+const displayWidth = ref<number>(resolutionPresets[0].w)
+const displayHeight = ref<number>(resolutionPresets[0].h)
 
-const { bytes, pngBlob, process } = useImageProcessor()
-
-/* called by ImageUploader */
-function handleLoaded(p: { bmp: ImageBitmap; url: string }) {
-  upload.value = p
+const setResolution = (resolution: ResolutionType) => {
+    selectedResolution.value = resolution
+    resolutionMode.value = 'preset'
 }
 
-watch([cropped, res, threshold], () => {
-    if (cropped.value) process(cropped.value, res.value.w, res.value.h, threshold.value)
-})
-</script>
+function onFileChange(e: Event) {
+    const files = (e.target as HTMLInputElement).files
+    if (!files || !files[0]) return
 
+    if (imageUrl.value) URL.revokeObjectURL(imageUrl.value)
+    imageUrl.value = URL.createObjectURL(files[0])
+}
+</script>
