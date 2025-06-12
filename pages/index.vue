@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col mx-auto max-w-[1400px] h-[100svh]">
+    <div class="flex flex-col mx-auto max-w-[1600px] h-[100svh]">
         <div box-="square" class="box-muted flex items-center h-20">
             <div class="px-4">
                 <h1 class="text-mauve text-lg">MONOFORM</h1>
@@ -52,23 +52,18 @@
                         </div>
                     </div>
 
-                    <div box-="square" shear-="top" class="box-muted">
+                    <div box-="square" shear-="top" class="box-muted" :class="{ 'opacity-40': !imageLoaded }">
                         <div class="flex justify-between">
-                            <span is-="badge" variant-="background0">Scale&nbsp;(px wide)</span>
+                            <span is-="badge" variant-="background0">Scale</span>
                             <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth }}</span>
                         </div>
 
                         <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <Slider
-                                v-model="scaleWidth"
-                                :min="displayWidth"
-                                :max="originalWidth"
-                                :disabled="!imageLoaded"
-                            />
+                            <Slider v-model="scaleWidth" :min="displayWidth" :max="originalWidth" :disabled="!imageLoaded" />
                         </div>
                     </div>
 
-                    <div box-="square" shear-="top" class="box-muted">
+                    <div box-="square" shear-="top" class="box-muted z-50">
                         <div class="flex justify-between">
                             <span is-="badge" variant-="background0">Resolution</span>
                         </div>
@@ -98,6 +93,32 @@
                             </div>
                         </div>
                     </div>
+
+                    <div box-="square" shear-="top" class="box-muted">
+                        <div class="flex justify-between">
+                            <span is-="badge" variant-="background0">Draw Mode</span>
+                        </div>
+
+                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                            <details is-="popover">
+                                <summary class="w-full bg-background1 cursor-pointer capitalize">{{ drawMode }}</summary>
+                                <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
+                                    <li 
+                                        class="cursor-pointer" 
+                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'horizontal' }"
+                                        @click="drawMode = 'horizontal'">
+                                        Horizontal
+                                    </li>
+                                    <li 
+                                        class="cursor-pointer" 
+                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'vertical' }"
+                                        @click="drawMode = 'vertical'">
+                                        Vertical
+                                    </li>
+                                </ul>
+                            </details>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -117,6 +138,7 @@
                             :threshold="threshold[0]"
                             :contrast="contrast[0]"
                             :scale-width="scaleWidth[0]"
+                            :draw-mode="drawMode"
                             @output-code="setCode"
                         />
                     </div>
@@ -126,20 +148,23 @@
                     </div>
                 </div>
 
-                <div box-="square" shear-="top" class="box-muted">
+                <div box-="square" shear-="top" class="box-muted overflow-hidden">
                     <div class="flex justify-between">
                         <span is-="badge" variant-="background0">
                             <h1>Code</h1>
                         </span>
+                        <span is-="badge" variant-="background0" class="flex">
+                            <p @click="handleCodeCopy" class="bg-foreground0 text-background0 px-2 cursor-pointer">Copy</p>
+                        </span>
                     </div>
 
-                    <div v-if="outputCode" class="flex flex-col px-1 pt-1 grow overflow-auto">
-                        <code class="language-c" v-highlight>
+                    <div v-if="outputCode" class="flex flex-col p-2 h-[300px] overflow-auto">
+                        <code class="language-c p-6 whitespace-pre" v-highlight>
                             {{ outputCode }}
                         </code>
                     </div>
 
-                    <div v-else class="flex items-center p-3 pl-5">
+                    <div v-else class="flex p-3 pl-5 h-[300px]">
                         <p>Code to copy and paste will show up here</p> 
                     </div>
                 </div>
@@ -149,9 +174,12 @@
 </template>
 
 <script setup lang="ts">
-import { resolutionPresets } from '@/constants/resolutions'
-import type { ResolutionType } from '@/constants/resolutions'
 import MaskCanvas from '@/components/MaskCanvas.vue'
+
+import { copyText } from '@/handlers/copy'
+import { resolutionPresets } from '@/constants/resolutions'
+
+import type { ResolutionType } from '@/constants/resolutions'
 
 /* ------------------ existing state ------------------------------------- */
 const imageUrl           = ref<string | null>(null)
@@ -159,6 +187,7 @@ const outputCode         = ref<string>('')
 const threshold          = ref<number[]>([50])
 const contrast           = ref<number[]>([100])
 
+const drawMode = ref<'horizontal' | 'vertical'>('horizontal')
 const resolutionMode     = ref<'preset' | 'custom'>('preset')
 const selectedResolution = ref<ResolutionType>(resolutionPresets[0])
 
@@ -171,10 +200,7 @@ const originalWidth = ref<number>(0)       // natural width of img (px)
 const imageLoaded   = ref<boolean>(false)  // gate for enabling slider
 
 /* ------------------ settings helpers ----------------------------------- */
-const setCode = (code: string) => {
-    console.log(code)
-    outputCode.value = code
-}
+const setCode = (code: string) => outputCode.value = code
 const setResolution = (resolution: ResolutionType) => {
     selectedResolution.value = resolution
     resolutionMode.value = 'preset'
@@ -199,6 +225,8 @@ function onFileChange(e: Event) {
     }
     probe.src = imageUrl.value
 }
+
+const handleCodeCopy = async () => await copyText(outputCode.value)
 
 /* ------------------ keep scale ≥ displayWidth -------------------------- */
 watch(displayWidth, (w) => {

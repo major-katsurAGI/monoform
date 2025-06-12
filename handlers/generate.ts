@@ -1,10 +1,4 @@
-export const generateCCode = (
-	imageData: ImageData,
-	displayWidth: number,
-	displayHeight: number,
-	varName = 'image_bitmap',
-	drawMode: 'horizontal' | 'vertical' = 'horizontal'
-): string => {
+const generateCCode = (imageData: ImageData, displayWidth: number, displayHeight: number, varName = 'image_bitmap', drawMode: 'horizontal' | 'vertical'): string => {
 	const bytes: number[] = []
 
 	if (drawMode === 'horizontal') {
@@ -70,3 +64,5 @@ static const uint8_t ${varName}[${bytes.length}] = {
 #endif /* ${guard} */
 `.trimEnd()
 }
+
+export { generateCCode }

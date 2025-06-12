@@ -1,7 +1,7 @@
 import { defineNuxtPlugin } from '#app'
 import hljs from 'highlight.js'
 
-import '@catppuccin/highlightjs/css/catppuccin-frappe.css'
+import '@catppuccin/highlightjs/css/catppuccin-mocha.css'
 
 export default defineNuxtPlugin(nuxtApp => {
 	nuxtApp.vueApp.directive('highlight', {

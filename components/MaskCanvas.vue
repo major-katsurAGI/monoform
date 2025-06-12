@@ -36,26 +36,30 @@
 	</div>
 
     <div class="flex px-4 mt-auto">
+        <!-- {{ drawMode }} -->
         <button @click="emitCode" class="w-full cursor-pointer">Generate</button>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-import { clamp, debounce }		from '@/handlers/helpers'
-import { createDragHandlers }	from '@/handlers/drag'
-import { generateCCode }        from '@/handlers/generate'
+
+import { generateCCode } from '@/handlers/generate'
+import { clamp, debounce } from '@/handlers/helpers'
+import { createDragHandlers } from '@/handlers/drag'
 
 /* ───────── props ───────── */
-const props = defineProps({
-	imageUrl:      { type: String, default: null },
-	threshold:     { type: Number, required: true },
-	contrast:      { type: Number, required: true },
-	displayWidth:  { type: Number, required: true },
-	displayHeight: { type: Number, required: true },
-	scaleWidth:    { type: Number, required: true }
-})
+interface Props {
+	imageUrl?:      string | null
+	threshold:      number
+	contrast:       number
+	displayWidth:   number
+	displayHeight:  number
+	scaleWidth:     number
+	drawMode:       'horizontal' | 'vertical'
+}
 
+const props = defineProps<Props>()
 const emit = defineEmits<{ (e:'outputCode', code:string):void }>()
 
 /* ───────── refs ───────── */
@@ -232,8 +236,7 @@ const emitCode = () => {
 
 	const imgData = ctx.getImageData(sx, sy, props.displayWidth, props.displayHeight)
 
-	/* build C array + emit */
-    const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', 'horizontal')
+    const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', props.drawMode)
     emit('outputCode', code)
 
 	/* debug helper: auto-download cropped area as PNG */

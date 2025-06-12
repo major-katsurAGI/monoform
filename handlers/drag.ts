@@ -14,7 +14,7 @@ interface DragCtx {
 	scaleFactor   : ComputedRef<number>
 }
 
-export const createDragHandlers = (ctx: DragCtx) => {
+const createDragHandlers = (ctx: DragCtx) => {
 	const dragging	 = ref(false)
 	const dragOffset = reactive({ x: 0, y: 0 })
 	let activeBox: 'preview' | 'mono' | null = null
@@ -78,3 +78,5 @@ export const createDragHandlers = (ctx: DragCtx) => {
 
 	return { startDrag }
 }
+
+export { createDragHandlers }
