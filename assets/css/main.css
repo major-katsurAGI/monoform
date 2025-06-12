@@ -2,3 +2,7 @@
 
 @import "@webtui/css/full.css";
 @import '@webtui/theme-catppuccin';
+@import "@webtui/plugin-nf";
+
+/* Only the part that changes ↓ */
+.font-nerd { font-family:"Symbols Nerd Font"; }
