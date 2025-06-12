@@ -13,6 +13,7 @@
 					class="absolute border-2 border-cyan-400 cursor-move z-10"
 					:style="maskStylePreview"
 					@mousedown="startDrag"
+                    @touchstart="startDrag"
 				/>
 			</div>
 		</div>
@@ -30,6 +31,7 @@
 					class="absolute border-2 border-cyan-400 cursor-move z-10"
 					:style="maskStyleMono"
 					@mousedown="startDrag"
+                    @touchstart="startDrag"
 				/>
 			</div>
 		</div>
