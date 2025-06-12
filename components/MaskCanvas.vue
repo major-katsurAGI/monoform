@@ -6,7 +6,7 @@
 				<span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
 			</div>
 
-			<div class="relative w-full h-[250px] md:h-[400px] select-none my-2">
+			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
 				<canvas ref="previewCanvas" :style="canvasStylePreview" class="border border-dashed border-background2" />
 				<div
 					data-canvas="preview"
@@ -23,7 +23,7 @@
 				<span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
 			</div>
 
-			<div class="relative w-full h-[250px] md:h-[400px] select-none my-2">
+			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
 				<canvas ref="monoCanvas" :style="canvasStyleMono" class="border border-dashed border-background2"/>
 				<div
 					data-canvas="mono"

@@ -1,12 +1,12 @@
 <template>
     <div class="flex flex-col mx-auto max-w-[1600px] h-[100svh]">
-        <div box-="square" class="box-muted flex items-center h-20">
-            <div class="flex items-center justify-between grow px-4">
+        <div box-="square" class="box-muted flex items-center h-16">
+            <div class="flex items-center justify-between grow px-2">
                 <h1 class="text-mauve text-lg">MONOFORM</h1>
 
-                <div class="flex gap-[2ch]">
-                    <a href="https://github.com/major-katsurAGI/monoform" class="hover:underline">
-                        <span class="font-nerd">&#xf09b;</span>
+                <div class="flex gap-3">
+                    <a href="https://github.com/major-katsurAGI/monoform" class="flex hover:underline">
+                        <span class="font-nerd mr-1.5">&#xf09b;</span>
                         Github
                     </a>
                     <!-- <a href="https://github.com/major-katsurAGI/monoform"> -->
@@ -15,7 +15,7 @@
                     <!-- </a> -->
 
                     <button @click="toggleTheme" size-="small" title="Toggle theme" class="cursor-pointer">
-                        <span class="font-nerd mr-2">&#xf00df;</span>
+                        <span class="font-nerd mr-1.5">&#xf00df;</span>
                         <span v-if="colorMode.value === 'light'">Dark</span>
                         <span v-else>Light</span>
                     </button>
@@ -41,11 +41,11 @@
                             <div class="flex flex-col justify-center grow px-2 pt-1 pb-0.5">
                                 <input id="source_upload" type="file" accept="image/*" class="hidden" @change="onFileChange" />
 
-                                <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed border-2 border-foreground2 p-4 grow md:h-44 hover:bg-overlay1/20 transition-colors">
+                                <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed md:border border-background2 p-4 grow md:h-44 hover:bg-overlay1/20 transition-colors">
                                     Upload
                                 </label>
 
-                                <img v-else :src="imageUrl" class="object-contain max-h-[80px] md:max-h-[30svh]" alt="Source preview" />
+                                <img v-else :src="imageUrl" class="object-contain max-h-[78px] md:max-h-[30svh]" alt="Source preview" />
                             </div>
                         </div>
 
@@ -168,7 +168,7 @@
                     </div>
 
                     <div v-else class="flex items-center p-3 pl-5">
-                        <p>Add An Image To The Left</p> 
+                        <p>Add An Image</p> 
                     </div>
                 </div>
 
