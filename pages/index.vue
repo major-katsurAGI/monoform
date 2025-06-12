@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col mx-auto max-w-[1400px] min-h-[100svh]">
+    <div class="flex flex-col mx-auto max-w-[1400px] h-[100svh]">
         <div box-="square" class="box-muted flex items-center h-20">
             <div class="px-4">
                 <h1 class="text-mauve text-lg">MONOFORM</h1>
@@ -133,8 +133,10 @@
                         </span>
                     </div>
 
-                    <div v-if="outputCode" class="flex flex-col px-1 pt-1 grow">
-                        {{ outputCode }}
+                    <div v-if="outputCode" class="flex flex-col px-1 pt-1 grow overflow-auto">
+                        <code class="language-c" v-highlight>
+                            {{ outputCode }}
+                        </code>
                     </div>
 
                     <div v-else class="flex items-center p-3 pl-5">
