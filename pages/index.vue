@@ -1,14 +1,18 @@
 <template>
     <div class="flex flex-col mx-auto max-w-[1600px] h-[100svh]">
         <div box-="square" class="box-muted flex items-center h-20">
-            <div class="flex items-center grow px-4">
+            <div class="flex items-center justify-between grow px-4">
                 <h1 class="text-mauve text-lg">MONOFORM</h1>
 
-                <div class="flex items-center gap-5 ml-auto shrink-0">
-                    <a href="https://github.com/major-katsurAGI/monoform">
+                <div class="flex gap-[2ch]">
+                    <a href="https://github.com/major-katsurAGI/monoform" class="hover:underline">
                         <span class="font-nerd">&#xf09b;</span>
                         Github
                     </a>
+                    <!-- <a href="https://github.com/major-katsurAGI/monoform"> -->
+                    <!--     <span class="font-nerd">&#xf09b;</span> -->
+                    <!--     Github -->
+                    <!-- </a> -->
 
                     <button @click="toggleTheme" size-="small" title="Toggle theme" class="cursor-pointer">
                         <span class="font-nerd mr-2">&#xf00df;</span>
@@ -19,7 +23,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-[400px_1fr] flex-1">
+        <div class="grid md:grid-cols-[400px_1fr] flex-1">
             <div box-="square" shear-="top" class="box-muted flex flex-col">
                 <div>
                     <span is-="badge" variant-="background0">
@@ -28,30 +32,45 @@
                 </div>
 
                 <div class="flex flex-col px-1 pt-1 grow">
-                    <div box-="square" shear-="top" class="box-muted">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0e07;</span>Source</span>
+                    <div class="flex md:flex-col">
+                        <div box-="square" shear-="top" class="box-muted flex flex-col grow">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0e07;</span>Source</span>
+                            </div>
+
+                            <div class="flex flex-col justify-center grow px-2 pt-1 pb-0.5">
+                                <input id="source_upload" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+
+                                <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed border-2 border-foreground2 p-4 grow md:h-44 hover:bg-overlay1/20 transition-colors">
+                                    Upload
+                                </label>
+
+                                <img v-else :src="imageUrl" class="object-contain max-h-[80px] md:max-h-[30svh]" alt="Source preview" />
+                            </div>
                         </div>
 
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <input id="source_upload" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+                        <div class="flex flex-col grow">
+                            <div box-="square" shear-="top" class="box-muted">
+                                <div class="flex justify-between">
+                                    <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf00ca;</span>Threshold</span>
+                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold }}</span>
+                                </div>
 
-                            <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed border-2 border-foreground2 p-3 h-44 hover:bg-overlay1/20 transition-colors">
-                                Upload Image
-                            </label>
+                                <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                    <Slider v-model="threshold" :min="0" :max="100" />
+                                </div>
+                            </div>
 
-                            <img v-else :src="imageUrl" class="w-full object-contain max-h-[30svh]" alt="Source preview" />
-                        </div>
-                    </div>
+                            <div box-="square" shear-="top" class="box-muted" :class="{ 'opacity-40': !imageLoaded }">
+                                <div class="flex justify-between">
+                                    <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0c8e;</span>Scale</span>
+                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth }}</span>
+                                </div>
 
-                    <div box-="square" shear-="top" class="box-muted">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf00ca;</span>Threshold</span>
-                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold }}</span>
-                        </div>
-
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <Slider v-model="threshold" :min="0" :max="100" />
+                                <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                    <Slider v-model="scaleWidth" :min="displayWidth" :max="originalWidth" :disabled="!imageLoaded" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -66,49 +85,39 @@
                         </div>
                     </div>
 
-                    <div box-="square" shear-="top" class="box-muted" :class="{ 'opacity-40': !imageLoaded }">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0c8e;</span>Scale</span>
-                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth }}</span>
-                        </div>
+                    <div class="flex md:flex-col">
+                        <div box-="square" shear-="top" class="box-muted z-50 grow">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xF50C;</span>Resolution</span>
+                            </div>
 
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <Slider v-model="scaleWidth" :min="displayWidth" :max="originalWidth" :disabled="!imageLoaded" />
-                        </div>
-                    </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <details is-="popover">
+                                    <summary class="w-full bg-background1 cursor-pointer">{{ resolutionMode === 'preset' ? selectedResolution.label : 'Custom' }}</summary>
+                                    <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
+                                        <li 
+                                            v-for="resolutionItem of resolutionPresets"
+                                            class="cursor-pointer" 
+                                            :class="{ 'bg-foreground0 text-background0 font-semibold underline': selectedResolution.label === resolutionItem.label && resolutionMode !== 'custom' }"
+                                            @click="setResolution(resolutionItem)">
+                                            {{ resolutionItem.label }}
+                                        </li>
+                                        <li 
+                                            class="cursor-pointer" 
+                                            :class="{ 'bg-foreground0 text-background0 font-semibold underline': resolutionMode === 'custom' }"
+                                            @click="resolutionMode = 'custom'">
+                                            Custom
+                                        </li>
+                                    </ul>
+                                </details>
 
-                    <div box-="square" shear-="top" class="box-muted z-50">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xF50C;</span>Resolution</span>
-                        </div>
-
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <details is-="popover">
-                                <summary class="w-full bg-background1 cursor-pointer">{{ resolutionMode === 'preset' ? selectedResolution.label : 'Custom' }}</summary>
-                                <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
-                                    <li 
-                                        v-for="resolutionItem of resolutionPresets"
-                                        class="cursor-pointer" 
-                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': selectedResolution.label === resolutionItem.label && resolutionMode !== 'custom' }"
-                                        @click="setResolution(resolutionItem)">
-                                        {{ resolutionItem.label }}
-                                    </li>
-                                    <li 
-                                        class="cursor-pointer" 
-                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': resolutionMode === 'custom' }"
-                                        @click="resolutionMode = 'custom'">
-                                        Custom
-                                    </li>
-                                </ul>
-                            </details>
-
-                            <div v-if="resolutionMode === 'custom'" class="flex items-center gap-1.5 mt-1.5">
-                                <input v-model="displayWidth" type="text" class="w-auto min-w-0">x<input v-model="displayHeight" type="text" class="w-auto min-w-0">
+                                <div v-if="resolutionMode === 'custom'" class="flex items-center gap-1.5 mt-1.5">
+                                    <input v-model="displayWidth" type="text" class="w-auto min-w-0">x<input v-model="displayHeight" type="text" class="w-auto min-w-0">
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div box-="square" shear-="top" class="box-muted">
+                    <div box-="square" shear-="top" class="box-muted grow">
                         <div class="flex justify-between">
                             <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf1353;</span>Draw Mode</span>
                         </div>
@@ -132,6 +141,7 @@
                                 </ul>
                             </details>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -162,7 +172,7 @@
                     </div>
                 </div>
 
-                <div box-="square" shear-="top" class="box-muted overflow-hidden">
+                <div box-="square" shear-="top" class="box-muted overflow-hidden max-w-[100svw]">
                     <div class="flex justify-between">
                         <span is-="badge" variant-="background0">
                             <h1><span class="font-nerd mr-2">&#xf121;</span>Code</h1>

@@ -1,48 +1,47 @@
 <template>
-	<div class="flex justify-center gap-4 w-full pt-10">
-        <!-- EFFECTS PREVIEW -->
-        <div box-="square" shear-="top" class="box-muted">
-            <div>
-                <span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
-            </div>
+	<div class="flex justify-center w-full">
+		<!-- EFFECTS PREVIEW -->
+		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
+			<div>
+				<span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
+			</div>
 
-            <div class="relative w-[400px] h-[400px] select-none">
-                <canvas ref="previewCanvas" :style="canvasStylePreview" />
-                <div
-                    data-canvas="preview"
-                    class="absolute border-2 border-cyan-400 cursor-move z-10"
-                    :style="maskStylePreview"
-                    @mousedown="startDrag"
-                />
-            </div>
+			<div class="relative w-full h-[250px] md:h-[400px] select-none my-2">
+				<canvas ref="previewCanvas" :style="canvasStylePreview" class="border border-dashed border-background2" />
+				<div
+					data-canvas="preview"
+					class="absolute border-2 border-cyan-400 cursor-move z-10"
+					:style="maskStylePreview"
+					@mousedown="startDrag"
+				/>
+			</div>
 		</div>
 
-        <!-- DISPLAY PREVIEW -->
-        <div box-="square" shear-="top" class="box-muted">
-            <div>
-                <span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
-            </div>
+		<!-- DISPLAY PREVIEW -->
+		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
+			<div>
+				<span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
+			</div>
 
-            <div class="relative w-[400px] h-[400px] select-none">
-                <canvas ref="monoCanvas" :style="canvasStyleMono" />
-                <div
-                    data-canvas="mono"
-                    class="absolute border-2 border-cyan-400 cursor-move z-10"
-                    :style="maskStyleMono"
-                    @mousedown="startDrag"
-                />
-            </div>
-        </div>
+			<div class="relative w-full h-[250px] md:h-[400px] select-none my-2">
+				<canvas ref="monoCanvas" :style="canvasStyleMono" class="border border-dashed border-background2"/>
+				<div
+					data-canvas="mono"
+					class="absolute border-2 border-cyan-400 cursor-move z-10"
+					:style="maskStyleMono"
+					@mousedown="startDrag"
+				/>
+			</div>
+		</div>
 	</div>
 
-    <div class="flex px-4 mt-auto">
-        <!-- {{ drawMode }} -->
-        <button @click="emitCode" class="w-full cursor-pointer">Generate</button>
-    </div>
+	<div class="flex px-1.5 mt-auto">
+		<button @click="emitCode" class="w-full cursor-pointer">Generate</button>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 
 import { generateCCode } from '@/handlers/generate'
 import { clamp, debounce } from '@/handlers/helpers'
@@ -60,20 +59,17 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<{ (e:'outputCode', code:string):void }>()
+const emit  = defineEmits<{ (e:'outputCode', code:string):void }>()
 
 /* ───────── refs ───────── */
-const previewCanvas	= ref<HTMLCanvasElement | null>(null)
-const monoCanvas	= ref<HTMLCanvasElement | null>(null)
-const image			= ref<HTMLImageElement | null>(null)
-
-/* ───────── constants ───────── */
-const BOX = 400 // css square
+const previewCanvas = ref<HTMLCanvasElement | null>(null)
+const monoCanvas    = ref<HTMLCanvasElement | null>(null)
+const image         = ref<HTMLImageElement | null>(null)
 
 /* ───────── fit objects ───────── */
 type Fit = { s:number; w:number; h:number; offX:number; offY:number }
 const previewFit: Fit = reactive({ s:1, w:0, h:0, offX:0, offY:0 })
-const monoFit	 : Fit = reactive({ s:1, w:1, h:1, offX:0, offY:0 })
+const monoFit   : Fit = reactive({ s:1, w:1, h:1, offX:0, offY:0 })
 
 /* ───────── scale + mask ───────── */
 const scaleFactor = computed(() =>
@@ -87,17 +83,20 @@ const mask = reactive({
 	get h() { return props.displayHeight / scaleFactor.value }
 })
 
-/* ───────── helpers (define BEFORE first use) ───────── */
-const clearAll = () => {
-	previewCanvas.value?.getContext('2d')?.clearRect(0, 0, BOX, BOX)
-	monoCanvas.value?.getContext('2d')?.clearRect(0, 0, BOX, BOX)
+/* ───────── helpers ───────── */
+const clearCanvas = (c: HTMLCanvasElement | null) => {
+	if (!c) return
+	const ctx = c.getContext('2d'); if (!ctx) return
+	ctx.clearRect(0, 0, c.width, c.height)
 }
+const clearAll = () => { clearCanvas(previewCanvas.value); clearCanvas(monoCanvas.value) }
 const clampMask = () => {
 	if (!image.value) return
 	mask.x = clamp(mask.x, 0, image.value.width  - mask.w)
 	mask.y = clamp(mask.y, 0, image.value.height - mask.h)
 }
 
+/* ───────── drawing ───────── */
 const drawPreview = () => {
 	if (!previewCanvas.value || !image.value) return
 	const ctx = previewCanvas.value.getContext('2d')!
@@ -115,43 +114,52 @@ const drawMono = () => {
 	ctx.filter = 'none'
 
 	const data = ctx.getImageData(0, 0, monoFit.w, monoFit.h)
-	const d	 = data.data
-	const thr = props.threshold * 2.55
+	const d    = data.data
+	const thr  = props.threshold * 2.55
 
 	for (let i = 0; i < d.length; i += 4) {
-		const g	 = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
+		const g  = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
 		const bw = g < thr ? 0 : 255
 		d[i] = d[i + 1] = d[i + 2] = bw
 	}
 	ctx.putImageData(data, 0, 0)
 }
 
+/* ───────── fit calc ───────── */
+const fitInBox = (boxW:number, boxH:number, rawW:number, rawH:number) => {
+	const s     = Math.min(boxW / rawW, boxH / rawH)
+	const offX  = (boxW - rawW * s) / 2
+	const offY  = (boxH - rawH * s) / 2
+	return { s, offX, offY }
+}
+
 const updateFits = () => {
 	if (!image.value) return
+	const img = image.value
+	const pBox = previewCanvas.value?.parentElement
+	const mBox = monoCanvas.value?.parentElement
+	if (!pBox || !mBox) return
 
-	/* preview */
-	previewFit.s	= Math.min(BOX / image.value.width, BOX / image.value.height)
-	previewFit.w	= image.value.width  * previewFit.s
-	previewFit.h	= image.value.height * previewFit.s
-	previewFit.offX	= (BOX - previewFit.w) / 2
-	previewFit.offY	= (BOX - previewFit.h) / 2
+	/* preview 🆕 keep w/h = RAW image dims */
+	previewFit.w     = img.width
+	previewFit.h     = img.height
+	Object.assign(previewFit, { ...previewFit, ...fitInBox(pBox.clientWidth, pBox.clientHeight, img.width, img.height) })
 	if (previewCanvas.value) {
-		previewCanvas.value.width	= image.value.width
-		previewCanvas.value.height	= image.value.height
+		previewCanvas.value.width  = img.width
+		previewCanvas.value.height = img.height
 	}
 
-	/* mono */
-	monoFit.w		= props.scaleWidth || 1
-	monoFit.h		= Math.round(image.value.height * (monoFit.w / image.value.width))
-	monoFit.s		= Math.min(BOX / monoFit.w, BOX / monoFit.h)
-	monoFit.offX	= (BOX - monoFit.w * monoFit.s) / 2
-	monoFit.offY	= (BOX - monoFit.h * monoFit.s) / 2
+	/* mono 🆕 keep w/h = props.scaleWidth-reduced dims */
+	monoFit.w = props.scaleWidth || 1
+	monoFit.h = Math.round(img.height * (monoFit.w / img.width))
+	Object.assign(monoFit, { ...monoFit, ...fitInBox(mBox.clientWidth, mBox.clientHeight, monoFit.w, monoFit.h) })
 	if (monoCanvas.value) {
-		monoCanvas.value.width	= monoFit.w
-		monoCanvas.value.height	= monoFit.h
+		monoCanvas.value.width  = monoFit.w
+		monoCanvas.value.height = monoFit.h
 	}
 }
 
+/* ───────── load & watch ───────── */
 const loadImage = () => {
 	if (!props.imageUrl) { clearAll(); return }
 	const img = new Image()
@@ -165,9 +173,8 @@ const loadImage = () => {
 	img.src = props.imageUrl
 }
 
-/* ───────── initial watch registrations ───────── */
 watch(() => props.imageUrl, loadImage, { immediate:true })
-watch(() => props.contrast,	() => drawPreview())
+watch(() => props.contrast, () => drawPreview())
 watch([() => props.contrast, () => props.threshold], () => drawMono())
 
 const debouncedMono = debounce(drawMono, 80)
@@ -178,7 +185,23 @@ watch(() => props.scaleWidth, () => {
 	debouncedMono()
 })
 
-/* ───────── drag composable ───────── */
+/* ───────── react to container resize ───────── */
+let ro: ResizeObserver | null = null
+onMounted(() => {
+	if (previewCanvas.value) {
+		ro = new ResizeObserver(() => {
+			updateFits()
+			clampMask()
+			drawPreview()
+			drawMono()
+		})
+		ro.observe(previewCanvas.value.parentElement!)
+		ro.observe(monoCanvas.value!.parentElement!)
+	}
+})
+onBeforeUnmount(() => ro?.disconnect())
+
+/* ───────── drag ───────── */
 const { startDrag } = createDragHandlers({
 	previewCanvas,
 	monoCanvas,
@@ -191,18 +214,18 @@ const { startDrag } = createDragHandlers({
 
 /* ───────── styles ───────── */
 const canvasStylePreview = computed(() => ({
-	position: 'absolute',
-	width	: `${previewFit.w}px`,
-	height	: `${previewFit.h}px`,
-	left	: `${previewFit.offX}px`,
-	top		: `${previewFit.offY}px`
+	width      : `${previewFit.w * previewFit.s}px`,   // 🆕 scaled, not raw
+	height     : `${previewFit.h * previewFit.s}px`,
+	marginLeft : `${previewFit.offX}px`,
+	marginTop  : `${previewFit.offY}px`,
+	display    : 'block'
 }))
 const canvasStyleMono = computed(() => ({
-	position: 'absolute',
-	width	: `${monoFit.w * monoFit.s}px`,
-	height	: `${monoFit.h * monoFit.s}px`,
-	left	: `${monoFit.offX}px`,
-	top		: `${monoFit.offY}px`
+	width      : `${monoFit.w * monoFit.s}px`,         // 🆕 scaled, not raw
+	height     : `${monoFit.h * monoFit.s}px`,
+	marginLeft : `${monoFit.offX}px`,
+	marginTop  : `${monoFit.offY}px`,
+	display    : 'block'
 }))
 
 const overlayPreview = computed(() => ({
@@ -227,6 +250,7 @@ const maskStyleMono = computed(() => ({
 	top   : `${monoFit.offY  + mask.y * scaleFactor.value * monoFit.s}px`
 }))
 
+/* ───────── emit ───────── */
 const emitCode = () => {
 	if (!monoCanvas.value) return
 
@@ -236,23 +260,23 @@ const emitCode = () => {
 
 	const imgData = ctx.getImageData(sx, sy, props.displayWidth, props.displayHeight)
 
-    const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', props.drawMode)
-    emit('outputCode', code)
+	const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', props.drawMode)
+	emit('outputCode', code)
 
 	/* debug helper: auto-download cropped area as PNG */
-	//const dbg = document.createElement('canvas')
-	//dbg.width  = props.displayWidth
-	//dbg.height = props.displayHeight
-	//dbg.getContext('2d')!.putImageData(imgData, 0, 0)
+	// const dbg = document.createElement('canvas')
+	// dbg.width  = props.displayWidth
+	// dbg.height = props.displayHeight
+	// dbg.getContext('2d')!.putImageData(imgData, 0, 0)
 
-	//dbg.toBlob(blob => {
-	//	if (!blob) return
-	//	const url = URL.createObjectURL(blob)
-	//	const a   = document.createElement('a')
-	//	a.href      = url
-	//	a.download  = 'oled_crop.png'
-	//	a.click()
-	//	URL.revokeObjectURL(url)
-	//}, 'image/png')
+	// dbg.toBlob(blob => {
+	// 	if (!blob) return
+	// 	const url = URL.createObjectURL(blob)
+	// 	const a   = document.createElement('a')
+	// 	a.href     = url
+	// 	a.download = 'oled_crop.png'
+	// 	a.click()
+	// 	URL.revokeObjectURL(url)
+	// }, 'image/png')
 }
 </script>

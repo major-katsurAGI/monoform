@@ -2,7 +2,7 @@ import { ref, onBeforeUnmount, reactive } from 'vue'
 import { clamp } from './helpers'
 
 import type { Ref, ComputedRef } from 'vue'
-type Fit = { s:number; offX:number; offY:number }
+type Fit = { s:number; offX:number; offY:number }   // unchanged
 
 interface DragCtx {
 	previewCanvas : Ref<HTMLCanvasElement | null>
@@ -21,9 +21,9 @@ const createDragHandlers = (ctx: DragCtx) => {
 
 	const toImage = (event: MouseEvent, box:'preview'|'mono') => {
 		if (!ctx.image.value) return null
-		const rect = box === 'mono'
+		const rect = (box === 'mono'
 			? ctx.monoCanvas.value!.getBoundingClientRect()
-			: ctx.previewCanvas.value!.getBoundingClientRect()
+			: ctx.previewCanvas.value!.getBoundingClientRect())
 
 		const cx = event.clientX - rect.left
 		const cy = event.clientY - rect.top
@@ -45,18 +45,13 @@ const createDragHandlers = (ctx: DragCtx) => {
 		const box = (event.currentTarget as HTMLElement).dataset.canvas as 'preview'|'mono'
 		const p = toImage(event, box); if (!p) return
 
-		// if (
-		// 	p.x >= ctx.mask.x && p.x <= ctx.mask.x + ctx.mask.w &&
-		// 	p.y >= ctx.mask.y && p.y <= ctx.mask.y + ctx.mask.h
-		// ) {
-			activeBox		= box
-			dragging.value	= true
-			dragOffset.x	= p.x - ctx.mask.x
-			dragOffset.y	= p.y - ctx.mask.y
+		activeBox		= box
+		dragging.value	= true
+		dragOffset.x	= p.x - ctx.mask.x
+		dragOffset.y	= p.y - ctx.mask.y
 
-			window.addEventListener('mousemove', onDrag)
-			window.addEventListener('mouseup', stopDrag)
-		// }
+		window.addEventListener('mousemove', onDrag)
+		window.addEventListener('mouseup', stopDrag)
 	}
 
 	const onDrag = (event: MouseEvent) => {
