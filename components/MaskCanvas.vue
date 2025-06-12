@@ -233,29 +233,23 @@ const emitCode = () => {
 	const imgData = ctx.getImageData(sx, sy, props.displayWidth, props.displayHeight)
 
 	/* build C array + emit */
-	const code = generateCCode(
-		imgData,
-		props.displayWidth,
-		props.displayHeight,
-		props.displayWidth,
-		props.displayHeight
-	)
-	emit('outputCode', code)
+    const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', 'horizontal')
+    emit('outputCode', code)
 
-//	/* debug helper: auto-download cropped area as PNG */
-//	const dbg = document.createElement('canvas')
-//	dbg.width  = props.displayWidth
-//	dbg.height = props.displayHeight
-//	dbg.getContext('2d')!.putImageData(imgData, 0, 0)
-//
-//	dbg.toBlob(blob => {
-//		if (!blob) return
-//		const url = URL.createObjectURL(blob)
-//		const a   = document.createElement('a')
-//		a.href      = url
-//		a.download  = 'oled_crop.png'
-//		a.click()
-//		URL.revokeObjectURL(url)
-//	}, 'image/png')
+	/* debug helper: auto-download cropped area as PNG */
+	//const dbg = document.createElement('canvas')
+	//dbg.width  = props.displayWidth
+	//dbg.height = props.displayHeight
+	//dbg.getContext('2d')!.putImageData(imgData, 0, 0)
+
+	//dbg.toBlob(blob => {
+	//	if (!blob) return
+	//	const url = URL.createObjectURL(blob)
+	//	const a   = document.createElement('a')
+	//	a.href      = url
+	//	a.download  = 'oled_crop.png'
+	//	a.click()
+	//	URL.revokeObjectURL(url)
+	//}, 'image/png')
 }
 </script>
