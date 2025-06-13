@@ -2,7 +2,7 @@
 	<div class="flex justify-center w-full">
 		<!-- EFFECTS PREVIEW -->
 		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
-			<span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
+			<span is-="badge" variant-="background0"><h1 class="font-bold text-peach">Effects Preview</h1></span>
 
 			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
 				<canvas
@@ -22,7 +22,7 @@
 
 		<!-- DISPLAY PREVIEW -->
 		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
-			<span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
+			<span is-="badge" variant-="background0"><h1 class="font-bold text-green">Display Preview</h1></span>
 
 			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
 				<canvas
@@ -41,7 +41,7 @@
 		</div>
 	</div>
 
-	<div class="flex px-1.5 mt-auto">
+	<div class="flex px-1.5 mb-4">
 		<button @click="emitCode" class="w-full cursor-pointer">Generate</button>
 	</div>
 </template>
@@ -54,8 +54,8 @@ import { generateCCode } from '@/handlers/generate'
 import { clamp } from '@/handlers/helpers'
 import { createDragHandlers } from '@/handlers/drag'
 
-import { createRenderer } from '@/handlers/render'          /* runtime code  */
-import type { Renderer } from '@/handlers/render'           /* type-only     */
+import { createRenderer } from '@/handlers/render'
+import type { Renderer } from '@/handlers/render'
 
 import fragPreview   from '@/shaders/effects.frag.glsl?raw'
 import fragThreshold from '@/shaders/threshold.frag.glsl?raw'
@@ -109,14 +109,16 @@ const mask = reactive({
 
 /* ───────── shader uniforms ───────── */
 const previewUniforms = computed(() => ({
-	u_blur       : props.blur * 0.05,
-	u_grain      : props.grain,
-	u_hue        : props.hue,
-	u_brightness : props.brightness,
-	u_contrast   : props.contrast / 100,
-	u_grayscale  : props.grayscale,
-	u_sepia      : props.sepia,
-	u_saturate   : props.saturate
+	u_blur       : (props.blur       / 100) * 0.05,   // 0‥0.05
+	u_grain      :  props.grain      / 100,           // 0‥1
+	u_hue        :  props.hue,                        // −180‥180  (already correct)
+
+	u_brightness :  props.brightness / 100,           // 0‥2, neutral = 1
+	u_contrast   :  props.contrast   / 100,           // 0‥2, neutral = 1
+	u_saturate   :  props.saturate   / 100,           // 0‥2, neutral = 1
+
+	u_grayscale  :  props.grayscale  / 100,           // 0‥1
+	u_sepia      :  props.sepia      / 100            // 0‥1
 }))
 const monoUniforms = computed(() => ({
 	u_threshold : props.threshold / 100
@@ -133,9 +135,17 @@ const drawPreview = () => {
 	if (rendererPreview.value && image.value)
 		rendererPreview.value.draw(image.value, previewUniforms.value)
 }
+
+/* mono uses effects canvas as source */
 const drawMono = () => {
-	if (rendererMono.value && image.value)
-		rendererMono.value.draw(image.value, monoUniforms.value)
+	if (rendererMono.value && previewCanvas.value)
+		rendererMono.value.draw(previewCanvas.value, monoUniforms.value)
+}
+
+/* render preview now + mono in next frame so GPU has finished */
+const redrawAll = () => {
+	drawPreview()
+	requestAnimationFrame(drawMono)
 }
 
 /* ───────── fit calc ───────── */
@@ -188,47 +198,35 @@ const loadImage = () => {
 		image.value = img
 		updateFits()
 
-		/* init renderers only once */
 		if (!rendererPreview.value && previewCanvas.value)
 			rendererPreview.value = createRenderer(previewCanvas.value, fragPreview)
 
 		if (!rendererMono.value && monoCanvas.value)
 			rendererMono.value = createRenderer(monoCanvas.value, fragThreshold)
 
-		drawPreview()
-		drawMono()
+		redrawAll()
 	}
 	img.src = props.imageUrl
 }
 watch(() => props.imageUrl, loadImage, { immediate:true })
 
-/* props → uniforms (NO DEBOUNCE) */
+/* reactive uniforms */
 watch(
 	[
 		() => props.blur, () => props.grain, () => props.hue,
 		() => props.brightness, () => props.contrast, () => props.grayscale,
 		() => props.sepia, () => props.saturate
 	],
-	drawPreview
+	redrawAll
 )
-watch(() => props.threshold, drawMono)
+watch(() => props.threshold, () => requestAnimationFrame(drawMono))
+watch(() => props.scaleWidth, () => { updateFits(); redrawAll() })
 
-watch(() => props.scaleWidth, () => {
-	updateFits()
-	drawPreview()
-	drawMono()
-})
-
-/* ───────── react to container resize ───────── */
+/* ───────── resize ───────── */
 let ro: ResizeObserver | null = null
 onMounted(() => {
 	if (previewCanvas.value) {
-		ro = new ResizeObserver(() => {
-			updateFits()
-			clampMask()
-			drawPreview()
-			drawMono()
-		})
+		ro = new ResizeObserver(() => { updateFits(); clampMask(); redrawAll() })
 		ro.observe(previewCanvas.value.parentElement!)
 		ro.observe(monoCanvas.value!.parentElement!)
 	}
@@ -286,54 +284,56 @@ const maskStyleMono = computed(() => ({
 
 /* ───────── emit ───────── */
 const emitCode = () => {
-	if (!rendererMono.value || !image.value) return
-	drawMono() /* ensure the framebuffer is freshly rendered */
+	if (!rendererMono.value || !previewCanvas.value) return
 
-	const sx   = Math.round(mask.x * scaleFactor.value)
-	const sy   = Math.round(mask.y * scaleFactor.value)
-	const syGL = monoFit.h - props.displayHeight - sy /* flip Y for GL */
+	/* schedule readPixels after mono has rendered this frame */
+	redrawAll()
+	requestAnimationFrame(() => {
+		const sx   = Math.round(mask.x * scaleFactor.value)
+		const sy   = Math.round(mask.y * scaleFactor.value)
+		const syGL = monoFit.h - props.displayHeight - sy /* flip Y for GL */
 
-	const buf = rendererMono.value.readPixels(
-		sx, syGL, props.displayWidth, props.displayHeight
-	)
-
-	/* flip rows ↓ */
-	const row     = props.displayWidth * 4
-	const flipped = new Uint8ClampedArray(buf.length)
-	for (let y = 0; y < props.displayHeight; ++y) {
-		flipped.set(
-			buf.subarray(
-				(props.displayHeight - 1 - y) * row,
-				(props.displayHeight - y) * row
-			),
-			y * row
+		const buf = rendererMono.value!.readPixels(
+			sx, syGL, props.displayWidth, props.displayHeight
 		)
-	}
 
-	const imgData = new ImageData(flipped, props.displayWidth, props.displayHeight)
-	const code    = generateCCode(
-		imgData,
-		props.displayWidth,
-		props.displayHeight,
-		'image_bitmap',
-		props.drawMode
-	)
-	emit('outputCode', code)
+		const row     = props.displayWidth * 4
+		const flipped = new Uint8ClampedArray(buf.length)
+		for (let y = 0; y < props.displayHeight; ++y) {
+			flipped.set(
+				buf.subarray(
+					(props.displayHeight - 1 - y) * row,
+					(props.displayHeight - y) * row
+				),
+				y * row
+			)
+		}
 
-	/* debug helper: auto-download cropped area as PNG */
-	// const dbg = document.createElement('canvas')
-	// dbg.width  = props.displayWidth
-	// dbg.height = props.displayHeight
-	// dbg.getContext('2d')!.putImageData(imgData, 0, 0)
-	//
-	// dbg.toBlob(blob => {
-	// 	if (!blob) return
-	// 	const url = URL.createObjectURL(blob)
-	// 	const a   = document.createElement('a')
-	// 	a.href     = url
-	// 	a.download = 'oled_crop.png'
-	// 	a.click()
-	// 	URL.revokeObjectURL(url)
-	// }, 'image/png')
+		const imgData = new ImageData(flipped, props.displayWidth, props.displayHeight)
+		const code    = generateCCode(
+			imgData,
+			props.displayWidth,
+			props.displayHeight,
+			'image_bitmap',
+			props.drawMode
+		)
+		emit('outputCode', code)
+
+		/* debug helper: auto-download cropped area as PNG */
+		// const dbg = document.createElement('canvas')
+		// dbg.width  = props.displayWidth
+		// dbg.height = props.displayHeight
+		// dbg.getContext('2d')!.putImageData(imgData, 0, 0)
+		//
+		// dbg.toBlob(blob => {
+		// 	if (!blob) return
+		// 	const url = URL.createObjectURL(blob)
+		// 	const a   = document.createElement('a')
+		// 	a.href     = url
+		// 	a.download = 'oled_crop.png'
+		// 	a.click()
+		// 	URL.revokeObjectURL(url)
+		// }, 'image/png')
+	})
 }
 </script>

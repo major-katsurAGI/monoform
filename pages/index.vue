@@ -23,7 +23,7 @@
             </div>
         </div>
 
-        <div class="grid md:grid-cols-[400px_1fr] flex-1">
+        <div class="flex flex-col md:grid md:grid-cols-[450px_1fr] grow">
             <div box-="square" shear-="top" class="box-muted flex flex-col">
                 <div>
                     <span is-="badge" variant-="background0">
@@ -31,29 +31,28 @@
                     </span>
                 </div>
 
-                <div class="flex flex-col px-1 pt-1 grow">
+                <div class="flex flex-col px-1 pt-1">
                     <div class="flex md:flex-col">
                         <div box-="square" shear-="top" class="box-muted flex flex-col grow">
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-sm">
                                 <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0e07;</span>Source</span>
                             </div>
 
-                            <div class="flex flex-col justify-center grow px-2 pt-1 pb-0.5">
+                            <div class="flex flex-col items-center justify-center grow px-2 pt-1 pb-0.5 md:min-h-32">
                                 <input id="source_upload" type="file" accept="image/*" class="hidden" @change="onFileChange" />
 
-                                <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed md:border border-background2 p-4 grow md:h-44 hover:bg-overlay1/20 transition-colors">
-                                    Upload
+                                <label for="source_upload" class="cursor-pointer flex items-center justify-center w-full h-full hover:bg-overlay1/20 transition-colors">
+                                    <span v-if="!imageUrl" class="font-nerd text-xl">&#xf05e;</span>
+                                    <img v-else :src="imageUrl" class="object-contain max-h-[78px] md:max-h-[30svh]" alt="Source preview" />
                                 </label>
-
-                                <img v-else :src="imageUrl" class="object-contain max-h-[78px] md:max-h-[30svh]" alt="Source preview" />
                             </div>
                         </div>
 
                         <div class="flex flex-col grow">
                             <div box-="square" shear-="top" class="box-muted">
-                                <div class="flex justify-between">
+                                <div class="flex justify-between text-sm">
                                     <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf00ca;</span>Threshold</span>
-                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold }}</span>
+                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ threshold[0] }}</span>
                                 </div>
 
                                 <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
@@ -62,9 +61,9 @@
                             </div>
 
                             <div box-="square" shear-="top" class="box-muted" :class="{ 'opacity-40': !imageLoaded }">
-                                <div class="flex justify-between">
+                                <div class="flex justify-between text-sm">
                                     <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0c8e;</span>Scale</span>
-                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth }}</span>
+                                    <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ scaleWidth[0] }}</span>
                                 </div>
 
                                 <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
@@ -74,18 +73,90 @@
                         </div>
                     </div>
 
-                    <div box-="square" shear-="top" class="box-muted">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0196;</span>Contrast</span>
-                            <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ contrast }}</span>
+                    <div class="grid grid-cols-2 md:grid-cols-2 text-sm">
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0196;</span>Contrast</span>
+                                <span is-="badge" class="justify-self-end ml-auto" variant-="background0">{{ contrast[0] }}</span>
+                            </div>
+
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="contrast" :min="0" :max="200" />
+                            </div>
                         </div>
 
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <Slider v-model="contrast" :min="0" :max="200" />
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf03e;</span>Blur</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ blur[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="blur" :min="0" :max="100" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0cc3;</span>Grain</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ grain[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="grain" :min="0" :max="100" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf03e2;</span>Hue</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ hue[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="hue" :min="-180" :max="180" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf03e9;</span>Brightness</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ brightness[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="brightness" :min="0" :max="200" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0e39;</span>Grayscale</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ grayscale[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="grayscale" :min="0" :max="100" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0cf3;</span>Sepia</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ sepia[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="sepia" :min="0" :max="100" />
+                            </div>
+                        </div>
+
+                        <div box-="square" shear-="top" class="box-muted mt-1">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf0cfe;</span>Saturate</span>
+                                <span is-="badge" class="ml-auto" variant-="background0">{{ saturate[0] }}</span>
+                            </div>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <Slider v-model="saturate" :min="0" :max="200" />
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex md:flex-col">
+                    <div class="grid grid-cols-2 md:grid-cols-2 text-sm">
                         <div box-="square" shear-="top" class="box-muted z-5000 grow">
                             <div class="flex justify-between">
                                 <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xF50C;</span>Resolution</span>
@@ -117,85 +188,89 @@
                             </div>
                         </div>
 
-                    <div box-="square" shear-="top" class="box-muted grow z-4900">
-                        <div class="flex justify-between">
-                            <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf1353;</span>Draw Mode</span>
-                        </div>
+                        <div box-="square" shear-="top" class="box-muted grow z-4900">
+                            <div class="flex justify-between">
+                                <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf1353;</span>Draw Mode</span>
+                            </div>
 
-                        <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
-                            <details is-="popover">
-                                <summary class="w-full bg-background1 cursor-pointer capitalize">{{ drawMode }}</summary>
-                                <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
-                                    <li 
-                                        class="cursor-pointer" 
-                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'horizontal' }"
-                                        @click="drawMode = 'horizontal'">
-                                        Horizontal
-                                    </li>
-                                    <li 
-                                        class="cursor-pointer" 
-                                        :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'vertical' }"
-                                        @click="drawMode = 'vertical'">
-                                        Vertical
-                                    </li>
-                                </ul>
-                            </details>
+                            <div class="flex flex-col w-full px-2 pt-1 pb-0.5">
+                                <details is-="popover">
+                                    <summary class="w-full bg-background1 cursor-pointer capitalize">{{ drawMode }}</summary>
+                                    <ul marker-="open tree" class="bg-background0 pt-1 pl-1 w-full">
+                                        <li 
+                                            class="cursor-pointer" 
+                                            :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'horizontal' }"
+                                            @click="drawMode = 'horizontal'">
+                                            Horizontal
+                                        </li>
+                                        <li 
+                                            class="cursor-pointer" 
+                                            :class="{ 'bg-foreground0 text-background0 font-semibold underline': drawMode === 'vertical' }"
+                                            @click="drawMode = 'vertical'">
+                                            Vertical
+                                        </li>
+                                    </ul>
+                                </details>
+                            </div>
                         </div>
-                    </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-col">
-                <div box-="square" shear-="top" class="box-muted flex flex-col grow">
-                    <div class="flex justify-between">
-                        <span is-="badge" variant-="background0">
-                            <h1><span class="font-nerd mr-2">&#xf0a1d;</span>Previews</h1>
-                        </span>
-                    </div>
+            <div v-if="!imageUrl" box-="square" shear-="top" class="box-muted flex flex-col p-3 pl-5 grow">
+                <div class="flex justify-between">
+                    <span is-="badge" variant-="background0">
+                        <h1 class="text-blue"><span class="font-nerd mr-2">&#xf0e07;</span>Upload</h1>
+                    </span>
+                </div>
 
-                    <div v-if="imageUrl" class="flex flex-col px-1 pt-1 grow">
+                <div class="flex flex-col p-2 grow">
+                    <label v-if="!imageUrl" for="source_upload" class="cursor-pointer flex items-center justify-center border-dashed md:border border-background2 grow md:h-44 hover:bg-overlay1/20 transition-colors">
+                        Click To Upload
+                    </label>
+                </div>
+            </div>
+
+            <div v-else class="flex flex-col">
+                <div class="flex flex-col">
+                    <div class="flex flex-col px-1 grow">
                         <MaskCanvas
                             :image-url="imageUrl"
                             :display-width="displayWidth"
                             :display-height="displayHeight"
                             :threshold="threshold[0]"
                             :contrast="contrast[0]"
-                            :blur="0"
-                            :grain="0"
-                            :hue="0"
-                            :brightness="1"
-                            :grayscale="0"
-                            :sepia="0"
-                            :saturate="1"
+                            :blur="blur[0]"
+                            :grain="grain[0]"
+                            :hue="hue[0]"
+                            :brightness="brightness[0]"
+                            :grayscale="grayscale[0]"
+                            :sepia="sepia[0]"
+                            :saturate="saturate[0]"
                             :scale-width="scaleWidth[0]"
                             :draw-mode="drawMode"
                             @output-code="setCode"
                         />
-                    </div>
-
-                    <div v-else class="flex items-center p-3 pl-5">
-                        <p>Add An Image</p> 
                     </div>
                 </div>
 
                 <div box-="square" shear-="top" class="box-muted overflow-hidden max-w-[100svw]">
                     <div class="flex justify-between">
                         <span is-="badge" variant-="background0">
-                            <h1><span class="font-nerd mr-2">&#xf121;</span>Code</h1>
+                            <h1 class="text-yellow"><span class="font-nerd mr-2">&#xf121;</span>Code</h1>
                         </span>
                         <span is-="badge" variant-="background0" class="flex">
                             <p @click="handleCodeCopy" class="bg-foreground0 text-background0 px-2 cursor-pointer"><span class="font-nerd mr-2 text-sm">&#xf4bb;</span>Copy</p>
                         </span>
                     </div>
 
-                    <div v-if="outputCode" class="flex flex-col p-2 h-[300px] overflow-auto">
+                    <div v-if="outputCode" class="flex flex-col p-2 overflow-auto">
                         <code class="language-c p-2 md:p-6 whitespace-pre" v-highlight>
                             {{ outputCode }}
                         </code>
                     </div>
 
-                    <div v-else class="flex p-3 pl-5 h-[300px]">
+                    <div v-else class="flex p-3 pl-5">
                         <p>Code to copy and paste will show up here</p> 
                     </div>
                 </div>
@@ -221,6 +296,13 @@ const imageUrl           = ref<string | null>(null)
 const outputCode         = ref<string>('')
 const threshold          = ref<number[]>([50])
 const contrast           = ref<number[]>([100])
+const blur       = ref<number[]>([0])
+const grain      = ref<number[]>([0])
+const hue        = ref<number[]>([0])
+const brightness = ref<number[]>([100])
+const grayscale  = ref<number[]>([0])
+const sepia      = ref<number[]>([0])
+const saturate   = ref<number[]>([100])
 
 const drawMode = ref<'horizontal' | 'vertical'>('horizontal')
 const resolutionMode     = ref<'preset' | 'custom'>('preset')
