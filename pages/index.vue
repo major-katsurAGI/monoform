@@ -86,7 +86,7 @@
                     </div>
 
                     <div class="flex md:flex-col">
-                        <div box-="square" shear-="top" class="box-muted z-50 grow">
+                        <div box-="square" shear-="top" class="box-muted z-5000 grow">
                             <div class="flex justify-between">
                                 <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xF50C;</span>Resolution</span>
                             </div>
@@ -117,7 +117,7 @@
                             </div>
                         </div>
 
-                    <div box-="square" shear-="top" class="box-muted grow">
+                    <div box-="square" shear-="top" class="box-muted grow z-4900">
                         <div class="flex justify-between">
                             <span is-="badge" variant-="background0"><span class="font-nerd mr-2">&#xf1353;</span>Draw Mode</span>
                         </div>
@@ -161,6 +161,13 @@
                             :display-height="displayHeight"
                             :threshold="threshold[0]"
                             :contrast="contrast[0]"
+                            :blur="0"
+                            :grain="0"
+                            :hue="0"
+                            :brightness="1"
+                            :grayscale="0"
+                            :sepia="0"
+                            :saturate="1"
                             :scale-width="scaleWidth[0]"
                             :draw-mode="drawMode"
                             @output-code="setCode"
@@ -183,7 +190,7 @@
                     </div>
 
                     <div v-if="outputCode" class="flex flex-col p-2 h-[300px] overflow-auto">
-                        <code class="language-c p-6 whitespace-pre" v-highlight>
+                        <code class="language-c p-2 md:p-6 whitespace-pre" v-highlight>
                             {{ outputCode }}
                         </code>
                     </div>

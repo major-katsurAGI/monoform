@@ -2,36 +2,40 @@
 	<div class="flex justify-center w-full">
 		<!-- EFFECTS PREVIEW -->
 		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
-			<div>
-				<span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
-			</div>
+			<span is-="badge" variant-="background0"><p class="font-bold">Effects Preview</p></span>
 
 			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
-				<canvas ref="previewCanvas" :style="canvasStylePreview" class="border border-dashed border-background2" />
+				<canvas
+					ref="previewCanvas"
+					:style="canvasStylePreview"
+					class="border border-dashed border-background2"
+				/>
 				<div
 					data-canvas="preview"
 					class="absolute border-2 border-cyan-400 cursor-move z-10"
 					:style="maskStylePreview"
 					@mousedown="startDrag"
-                    @touchstart="startDrag"
+					@touchstart="startDrag"
 				/>
 			</div>
 		</div>
 
 		<!-- DISPLAY PREVIEW -->
 		<div box-="square" shear-="top" class="box-muted flex flex-col grow">
-			<div>
-				<span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
-			</div>
+			<span is-="badge" variant-="background0"><p class="font-bold">Display Preview</p></span>
 
 			<div class="relative w-full min-h-[150px] md:h-[400px] select-none my-2">
-				<canvas ref="monoCanvas" :style="canvasStyleMono" class="border border-dashed border-background2"/>
+				<canvas
+					ref="monoCanvas"
+					:style="canvasStyleMono"
+					class="border border-dashed border-background2"
+				/>
 				<div
 					data-canvas="mono"
 					class="absolute border-2 border-cyan-400 cursor-move z-10"
 					:style="maskStyleMono"
 					@mousedown="startDrag"
-                    @touchstart="startDrag"
+					@touchstart="startDrag"
 				/>
 			</div>
 		</div>
@@ -43,17 +47,31 @@
 </template>
 
 <script setup lang="ts">
+/* eslint-disable no-mixed-spaces-and-tabs */
 import { ref, reactive, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 
 import { generateCCode } from '@/handlers/generate'
-import { clamp, debounce } from '@/handlers/helpers'
+import { clamp } from '@/handlers/helpers'
 import { createDragHandlers } from '@/handlers/drag'
+
+import { createRenderer } from '@/handlers/render'          /* runtime code  */
+import type { Renderer } from '@/handlers/render'           /* type-only     */
+
+import fragPreview   from '@/shaders/effects.frag.glsl?raw'
+import fragThreshold from '@/shaders/threshold.frag.glsl?raw'
 
 /* ───────── props ───────── */
 interface Props {
 	imageUrl?:      string | null
 	threshold:      number
 	contrast:       number
+	blur:           number
+	grain:          number
+	hue:            number
+	brightness:     number
+	grayscale:      number
+	sepia:          number
+	saturate:       number
 	displayWidth:   number
 	displayHeight:  number
 	scaleWidth:     number
@@ -67,6 +85,10 @@ const emit  = defineEmits<{ (e:'outputCode', code:string):void }>()
 const previewCanvas = ref<HTMLCanvasElement | null>(null)
 const monoCanvas    = ref<HTMLCanvasElement | null>(null)
 const image         = ref<HTMLImageElement | null>(null)
+
+/* WebGL renderers */
+const rendererPreview = ref<Renderer | null>(null)
+const rendererMono    = ref<Renderer | null>(null)
 
 /* ───────── fit objects ───────── */
 type Fit = { s:number; w:number; h:number; offX:number; offY:number }
@@ -85,76 +107,71 @@ const mask = reactive({
 	get h() { return props.displayHeight / scaleFactor.value }
 })
 
+/* ───────── shader uniforms ───────── */
+const previewUniforms = computed(() => ({
+	u_blur       : props.blur * 0.05,
+	u_grain      : props.grain,
+	u_hue        : props.hue,
+	u_brightness : props.brightness,
+	u_contrast   : props.contrast / 100,
+	u_grayscale  : props.grayscale,
+	u_sepia      : props.sepia,
+	u_saturate   : props.saturate
+}))
+const monoUniforms = computed(() => ({
+	u_threshold : props.threshold / 100
+}))
+
 /* ───────── helpers ───────── */
-const clearCanvas = (c: HTMLCanvasElement | null) => {
-	if (!c) return
-	const ctx = c.getContext('2d'); if (!ctx) return
-	ctx.clearRect(0, 0, c.width, c.height)
-}
-const clearAll = () => { clearCanvas(previewCanvas.value); clearCanvas(monoCanvas.value) }
 const clampMask = () => {
 	if (!image.value) return
 	mask.x = clamp(mask.x, 0, image.value.width  - mask.w)
 	mask.y = clamp(mask.y, 0, image.value.height - mask.h)
 }
 
-/* ───────── drawing ───────── */
 const drawPreview = () => {
-	if (!previewCanvas.value || !image.value) return
-	const ctx = previewCanvas.value.getContext('2d')!
-	ctx.filter = `contrast(${props.contrast}%)`
-	ctx.clearRect(0, 0, image.value.width, image.value.height)
-	ctx.drawImage(image.value, 0, 0)
-	ctx.filter = 'none'
+	if (rendererPreview.value && image.value)
+		rendererPreview.value.draw(image.value, previewUniforms.value)
 }
-
 const drawMono = () => {
-	if (!monoCanvas.value || !image.value || !props.scaleWidth) return
-	const ctx = monoCanvas.value.getContext('2d')!
-	ctx.filter = `contrast(${props.contrast}%)`
-	ctx.drawImage(image.value, 0, 0, monoFit.w, monoFit.h)
-	ctx.filter = 'none'
-
-	const data = ctx.getImageData(0, 0, monoFit.w, monoFit.h)
-	const d    = data.data
-	const thr  = props.threshold * 2.55
-
-	for (let i = 0; i < d.length; i += 4) {
-		const g  = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
-		const bw = g < thr ? 0 : 255
-		d[i] = d[i + 1] = d[i + 2] = bw
-	}
-	ctx.putImageData(data, 0, 0)
+	if (rendererMono.value && image.value)
+		rendererMono.value.draw(image.value, monoUniforms.value)
 }
 
 /* ───────── fit calc ───────── */
-const fitInBox = (boxW:number, boxH:number, rawW:number, rawH:number) => {
-	const s     = Math.min(boxW / rawW, boxH / rawH)
-	const offX  = (boxW - rawW * s) / 2
-	const offY  = (boxH - rawH * s) / 2
+const fitInBox = (bw:number, bh:number, rw:number, rh:number) => {
+	const s     = Math.min(bw / rw, bh / rh)
+	const offX  = (bw - rw * s) / 2
+	const offY  = (bh - rh * s) / 2
 	return { s, offX, offY }
 }
 
 const updateFits = () => {
 	if (!image.value) return
-	const img = image.value
+	const img  = image.value
 	const pBox = previewCanvas.value?.parentElement
 	const mBox = monoCanvas.value?.parentElement
 	if (!pBox || !mBox) return
 
-	/* preview 🆕 keep w/h = RAW image dims */
-	previewFit.w     = img.width
-	previewFit.h     = img.height
-	Object.assign(previewFit, { ...previewFit, ...fitInBox(pBox.clientWidth, pBox.clientHeight, img.width, img.height) })
+	/* preview – keep raw dimensions */
+	previewFit.w = img.width
+	previewFit.h = img.height
+	Object.assign(
+		previewFit,
+		{ ...previewFit, ...fitInBox(pBox.clientWidth, pBox.clientHeight, img.width, img.height) }
+	)
 	if (previewCanvas.value) {
 		previewCanvas.value.width  = img.width
 		previewCanvas.value.height = img.height
 	}
 
-	/* mono 🆕 keep w/h = props.scaleWidth-reduced dims */
+	/* mono – scaled-down with scaleWidth */
 	monoFit.w = props.scaleWidth || 1
 	monoFit.h = Math.round(img.height * (monoFit.w / img.width))
-	Object.assign(monoFit, { ...monoFit, ...fitInBox(mBox.clientWidth, mBox.clientHeight, monoFit.w, monoFit.h) })
+	Object.assign(
+		monoFit,
+		{ ...monoFit, ...fitInBox(mBox.clientWidth, mBox.clientHeight, monoFit.w, monoFit.h) }
+	)
 	if (monoCanvas.value) {
 		monoCanvas.value.width  = monoFit.w
 		monoCanvas.value.height = monoFit.h
@@ -162,29 +179,44 @@ const updateFits = () => {
 }
 
 /* ───────── load & watch ───────── */
+const clearAll = () => { rendererPreview.value = rendererMono.value = null }
+
 const loadImage = () => {
 	if (!props.imageUrl) { clearAll(); return }
 	const img = new Image()
 	img.onload = () => {
 		image.value = img
 		updateFits()
-		clampMask()
+
+		/* init renderers only once */
+		if (!rendererPreview.value && previewCanvas.value)
+			rendererPreview.value = createRenderer(previewCanvas.value, fragPreview)
+
+		if (!rendererMono.value && monoCanvas.value)
+			rendererMono.value = createRenderer(monoCanvas.value, fragThreshold)
+
 		drawPreview()
 		drawMono()
 	}
 	img.src = props.imageUrl
 }
-
 watch(() => props.imageUrl, loadImage, { immediate:true })
-watch(() => props.contrast, () => drawPreview())
-watch([() => props.contrast, () => props.threshold], () => drawMono())
 
-const debouncedMono = debounce(drawMono, 80)
+/* props → uniforms (NO DEBOUNCE) */
+watch(
+	[
+		() => props.blur, () => props.grain, () => props.hue,
+		() => props.brightness, () => props.contrast, () => props.grayscale,
+		() => props.sepia, () => props.saturate
+	],
+	drawPreview
+)
+watch(() => props.threshold, drawMono)
+
 watch(() => props.scaleWidth, () => {
 	updateFits()
-	clampMask()
 	drawPreview()
-	debouncedMono()
+	drawMono()
 })
 
 /* ───────── react to container resize ───────── */
@@ -216,14 +248,14 @@ const { startDrag } = createDragHandlers({
 
 /* ───────── styles ───────── */
 const canvasStylePreview = computed(() => ({
-	width      : `${previewFit.w * previewFit.s}px`,   // 🆕 scaled, not raw
+	width      : `${previewFit.w * previewFit.s}px`,
 	height     : `${previewFit.h * previewFit.s}px`,
 	marginLeft : `${previewFit.offX}px`,
 	marginTop  : `${previewFit.offY}px`,
 	display    : 'block'
 }))
 const canvasStyleMono = computed(() => ({
-	width      : `${monoFit.w * monoFit.s}px`,         // 🆕 scaled, not raw
+	width      : `${monoFit.w * monoFit.s}px`,
 	height     : `${monoFit.h * monoFit.s}px`,
 	marginLeft : `${monoFit.offX}px`,
 	marginTop  : `${monoFit.offY}px`,
@@ -254,15 +286,38 @@ const maskStyleMono = computed(() => ({
 
 /* ───────── emit ───────── */
 const emitCode = () => {
-	if (!monoCanvas.value) return
+	if (!rendererMono.value || !image.value) return
+	drawMono() /* ensure the framebuffer is freshly rendered */
 
-	const ctx = monoCanvas.value.getContext('2d', { willReadFrequently:true })!
-	const sx  = Math.round(mask.x * scaleFactor.value)
-	const sy  = Math.round(mask.y * scaleFactor.value)
+	const sx   = Math.round(mask.x * scaleFactor.value)
+	const sy   = Math.round(mask.y * scaleFactor.value)
+	const syGL = monoFit.h - props.displayHeight - sy /* flip Y for GL */
 
-	const imgData = ctx.getImageData(sx, sy, props.displayWidth, props.displayHeight)
+	const buf = rendererMono.value.readPixels(
+		sx, syGL, props.displayWidth, props.displayHeight
+	)
 
-	const code = generateCCode(imgData, props.displayWidth, props.displayHeight, 'image_bitmap', props.drawMode)
+	/* flip rows ↓ */
+	const row     = props.displayWidth * 4
+	const flipped = new Uint8ClampedArray(buf.length)
+	for (let y = 0; y < props.displayHeight; ++y) {
+		flipped.set(
+			buf.subarray(
+				(props.displayHeight - 1 - y) * row,
+				(props.displayHeight - y) * row
+			),
+			y * row
+		)
+	}
+
+	const imgData = new ImageData(flipped, props.displayWidth, props.displayHeight)
+	const code    = generateCCode(
+		imgData,
+		props.displayWidth,
+		props.displayHeight,
+		'image_bitmap',
+		props.drawMode
+	)
 	emit('outputCode', code)
 
 	/* debug helper: auto-download cropped area as PNG */
@@ -270,7 +325,7 @@ const emitCode = () => {
 	// dbg.width  = props.displayWidth
 	// dbg.height = props.displayHeight
 	// dbg.getContext('2d')!.putImageData(imgData, 0, 0)
-
+	//
 	// dbg.toBlob(blob => {
 	// 	if (!blob) return
 	// 	const url = URL.createObjectURL(blob)

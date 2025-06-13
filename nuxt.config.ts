@@ -6,5 +6,8 @@ export default defineNuxtConfig({
     modules: ['@nuxt/image', '@nuxtjs/color-mode', '@nuxtjs/tailwindcss'],
     vite: {
         worker: { format: 'es' } // needed for TS worker imports
-    }
+    },
+    colorMode: {
+        preference: 'dark',
+    },
 })
