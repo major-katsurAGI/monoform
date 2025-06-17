@@ -41,8 +41,12 @@
 		</div>
 	</div>
 
-	<div class="flex px-1.5 mb-4">
-		<button @click="emitCode" class="w-full cursor-pointer">Generate</button>
+	<div class="flex flex-col md:flex-row px-1.5 mb-4 gap-1.5">
+		<button @click="handleGenerateCode" class="cursor-pointer h-12 bg-foreground0">Generate Code</button>
+        <div class="flex gap-1.5 w-full md:w-auto">
+            <button @click="handleDownloadPNG" class="cursor-pointer h-12 bg-foreground0 w-full md:w-auto">Download PNG</button>
+            <button @click="handleDownloadFile" class="cursor-pointer h-12 bg-foreground0 w-full md:w-auto">Download Header</button>
+        </div>
 	</div>
 </template>
 
@@ -50,9 +54,10 @@
 /* eslint-disable no-mixed-spaces-and-tabs */
 import { ref, reactive, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 
-import { generateCCode } from '@/handlers/generate'
 import { clamp } from '@/handlers/helpers'
 import { createDragHandlers } from '@/handlers/drag'
+import { generateHeaderCode } from '@/handlers/generate'
+import { downloadBitmapHeader, downloadPNG } from '@/handlers/download'
 
 import { createRenderer } from '@/handlers/render'
 import type { Renderer } from '@/handlers/render'
@@ -282,58 +287,47 @@ const maskStyleMono = computed(() => ({
 	top   : `${monoFit.offY  + mask.y * scaleFactor.value * monoFit.s}px`
 }))
 
-/* ───────── emit ───────── */
-const emitCode = () => {
-	if (!rendererMono.value || !previewCanvas.value) return
+const handleDownloadPNG = () => {
+    downloadPNG(
+        monoCanvas.value!,
+        Math.round(mask.x * scaleFactor.value),   // sx
+        Math.round(mask.y * scaleFactor.value),   // sy
+        props.displayWidth,                       // w
+        props.displayHeight                       // h
+    )
+}
 
-	/* schedule readPixels after mono has rendered this frame */
+const getCodeString = () => {
+	const sx   = Math.round(mask.x * scaleFactor.value)
+	const sy   = Math.round(mask.y * scaleFactor.value)
+	const syGL = monoFit.h - props.displayHeight - sy   // GL origin at bottom
+
+	const buf = rendererMono.value!.readPixels(sx, syGL, props.displayWidth, props.displayHeight)
+	const codeString = generateHeaderCode(
+		buf,
+		props.displayWidth,
+		props.displayHeight,
+		'image_bitmap',
+		props.drawMode
+	)
+
+    return codeString
+}
+
+const handleGenerateCode = () => {
+	if (!rendererMono.value || !previewCanvas.value) return
+    let codeString = ''
+
 	redrawAll()
 	requestAnimationFrame(() => {
-		const sx   = Math.round(mask.x * scaleFactor.value)
-		const sy   = Math.round(mask.y * scaleFactor.value)
-		const syGL = monoFit.h - props.displayHeight - sy /* flip Y for GL */
-
-		const buf = rendererMono.value!.readPixels(
-			sx, syGL, props.displayWidth, props.displayHeight
-		)
-
-		const row     = props.displayWidth * 4
-		const flipped = new Uint8ClampedArray(buf.length)
-		for (let y = 0; y < props.displayHeight; ++y) {
-			flipped.set(
-				buf.subarray(
-					(props.displayHeight - 1 - y) * row,
-					(props.displayHeight - y) * row
-				),
-				y * row
-			)
-		}
-
-		const imgData = new ImageData(flipped, props.displayWidth, props.displayHeight)
-		const code    = generateCCode(
-			imgData,
-			props.displayWidth,
-			props.displayHeight,
-			'image_bitmap',
-			props.drawMode
-		)
-		emit('outputCode', code)
-
-		/* debug helper: auto-download cropped area as PNG */
-		// const dbg = document.createElement('canvas')
-		// dbg.width  = props.displayWidth
-		// dbg.height = props.displayHeight
-		// dbg.getContext('2d')!.putImageData(imgData, 0, 0)
-		//
-		// dbg.toBlob(blob => {
-		// 	if (!blob) return
-		// 	const url = URL.createObjectURL(blob)
-		// 	const a   = document.createElement('a')
-		// 	a.href     = url
-		// 	a.download = 'oled_crop.png'
-		// 	a.click()
-		// 	URL.revokeObjectURL(url)
-		// }, 'image/png')
+		codeString = getCodeString()
+		emit('outputCode', codeString)
 	})
 }
+
+const handleDownloadFile = () => {
+    const codeString = getCodeString()
+    downloadBitmapHeader(codeString)
+}
+
 </script>
