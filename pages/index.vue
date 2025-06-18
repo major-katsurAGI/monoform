@@ -2,7 +2,10 @@
     <div class="flex flex-col mx-auto max-w-[1600px] h-[100svh]">
         <div box-="square" class="box-muted flex items-center h-16">
             <div class="flex items-center justify-between grow px-2">
-                <h1 class="text-mauve text-lg">MONOFORM</h1>
+                <div class="flex items-center gap-1.5">
+                    <img src="/favicon.png" alt="" class="h-8">
+                    <h1 class="text-mauve text-lg before:content-['']">MONOFORM</h1>
+                </div>
 
                 <div class="flex gap-3">
                     <a href="https://github.com/major-katsurAGI/monoform" class="flex hover:underline">
